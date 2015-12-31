@@ -12,14 +12,14 @@ import java.util.Date;
 /**
  * Created by Слава on 23.12.2015.
  */
-public class TaskNotRepeat extends JFrame {
+public class TaskNotRepeat extends  NewTask {
     JButton jButton;
     JTextField title;
     JDateChooser time;
     JCheckBox active;
     boolean chActive;
 
-    public JButton getjButton() {
+    public JButton getjButtonAdd() {
         return jButton;
     }
 
@@ -28,6 +28,7 @@ public class TaskNotRepeat extends JFrame {
     }
     public void  setTaskFrame() {
         final JPanel panel = new JPanel(new MigLayout());
+
         title = new JTextField(15);
         time = new JDateChooser();
         time.setDateFormatString("yyyy-MM-dd HH:mm:ss.S");
@@ -56,6 +57,9 @@ public class TaskNotRepeat extends JFrame {
         this.setVisible(true);
     }
     public Task getTask(){
+        if (title.getText().equals("")|time.getDate()==null)
+            JOptionPane.showMessageDialog(this,"One of the fields are filled");
+
         String title = this.title.getText();
         Date time = this.time.getDate();
         Task task =  new Task(title, time);

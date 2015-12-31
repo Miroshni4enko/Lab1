@@ -1,6 +1,7 @@
 package controller;
 
-import view.MyFrame;
+import model.TextTaskIO;
+import view.MainFrame;
 
 import java.io.File;
 
@@ -10,7 +11,7 @@ import java.io.File;
 public class TestProgram {
     public static void main(String[] args) {
         File f = new File("Manager.txt");
-        MyFrame frame = new MyFrame();
-        TaskController con = new TaskController(frame, f);
+        MainFrame frame = new MainFrame();
+        TaskController con = new TaskController(frame, f,new TextTaskIO());
     }
 }

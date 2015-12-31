@@ -1,7 +1,7 @@
 package view;
 
 import model.Task;
-import model.TaskIO;
+import model.TextTaskIO;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.*;
@@ -47,7 +47,7 @@ public class DataPanel extends JPanel {
             if (task.isRepeated()) {
                 start.setText(task.getStartTime().toString());
                 end.setText(task.getEndTime().toString());
-                interval.setText("["+TaskIO.intervalToStr(task.getRepeatInterval()));
+                interval.setText("["+ TextTaskIO.intervalToStr(task.getRepeatInterval()));
                 time.setText("-------");
                 active.setSelected(task.isActive());
             } else {

@@ -15,7 +15,7 @@ import java.util.Date;
 /**
  * Created by Слава on 22.12.2015.
  */
-public class TaskRepeat extends JFrame {
+public class TaskRepeat extends NewTask {
     JButton jButton;
     JTextField title;
     JDateChooser start;
@@ -24,9 +24,17 @@ public class TaskRepeat extends JFrame {
     JTextField interval;
     boolean chActive;
     private JPanel panel;
-    public JButton getjButton() {
+    public JButton getjButtonAdd() {
         return jButton;
     }
+
+   /* public JTextField getInterval() {
+        return interval;
+    }
+
+    public JTextField getTitlle() {
+        return title;
+    }*/
 
     public TaskRepeat(){
         setTaskFrame();
@@ -71,6 +79,10 @@ public class TaskRepeat extends JFrame {
         this.setVisible(true);
     }
     public Task getTask(){
+        if (title.getText().equals("")|this.start.getDate()==null|this.end.getDate()==null|
+                this.interval.getText().equals("")|this.interval.getText().equals("0"))
+            JOptionPane.showMessageDialog(this,"One of the fields are filled");
+
         String title = this.title.getText();
         Date start = this.start.getDate();
         Date end = this.end.getDate();

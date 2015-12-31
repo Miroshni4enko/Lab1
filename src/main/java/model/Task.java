@@ -1,4 +1,6 @@
 package model;
+import org.apache.log4j.Logger;
+
 import java.io.Serializable;
 import java.util.Date;
 import java.util.Timer;
@@ -13,12 +15,26 @@ public class Task implements Serializable,Cloneable{
     private Date time;
     private Timer timer;
 
+    private static final Logger log = Logger.getLogger(Task.class);
+
     public Task(String title, Date time) {
+        if(time == null){
+            log.error("Field cannot be null");
+            return;
+        }
         this.title = title;
         this.time = new Date(time.getTime());
     }
 
     public Task(String title, Date start, Date end, int interval) {
+        if(interval <= 0){
+            log.error("Interval must be > 0");
+            return;
+        }
+        if(start == null|end == null){
+            log.error("Field cannot be null");
+            return;
+        }
         this.title = title;
         this.start = new Date(start.getTime());
         this.end = new Date(end.getTime());
@@ -31,6 +47,10 @@ public class Task implements Serializable,Cloneable{
         }
 
         public void setTime(Date time){
+            if(time == null) {
+                log.error("Field cannot be null");
+                return;
+            }
             if(this.interval == 0) this.time = time;
             else {
                 this.end = null;
@@ -42,6 +62,14 @@ public class Task implements Serializable,Cloneable{
      }
 
         public void setTime(Date start,Date end,int interval){
+            if(interval <= 0){
+                log.error("Interval must be > 0");
+                return;
+            }
+            if(start == null|end == null){
+                log.error("Field cannot be null");
+                return;
+            }
             if(interval == 0) {
                 this.time = null;
                 this.end = new Date(end.getTime());
@@ -102,6 +130,10 @@ public class Task implements Serializable,Cloneable{
     }
 
     public void setTimer(Timer timer) {
+        if(timer == null) {
+            log.error("Timer cannot be null");
+            return;
+        }
         this.timer = timer;
     }
 

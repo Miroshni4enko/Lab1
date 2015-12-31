@@ -17,12 +17,14 @@ import java.util.Timer;
  */
 public class TaskController {
     private List<Task> tasks;
-    private MyFrame myFrame;
+    private MainFrame mainFrame;
     private File file;
     private Task taskIndex;
-    public TaskController(MyFrame myFrame,File file) {
-        this.myFrame = myFrame;
+    private TaskIO taskIO;
+    public TaskController(MainFrame mainFrame, File file, TaskIO taskIO) {
+        this.mainFrame = mainFrame;
         this.file = file;
+        this.taskIO = taskIO;
         setTasks();
         tasksTimer(tasks);
         setListener();
@@ -30,83 +32,98 @@ public class TaskController {
     }
     public void setTasks(){
         tasks = new ArrayList<Task>();
-        TaskIO.readText(tasks, file);
-        myFrame.getList().addTasks(tasks);
+
+        taskIO.read(tasks, file);
+        mainFrame.getList().addTasks(tasks);
     }
-    public void setListener (){
-        myFrame.getList().addListSelectionListener(
+    public void setListener () {
+        mainListListener(mainFrame.getList());
+        Menu menu = mainFrame.getMenu();
+
+        newTaskListener(menu.getRepeat(),true);
+        newTaskListener(menu.getNrepeat(), false);
+        changeTaskListener(menu.getChange());
+        removeListener(menu.getRemove());
+        calendarListener(menu.getCalendar());
+        exitNotSaveListener(menu.getExitItem());
+        exitSaveListener(mainFrame);
+    }
+
+    public void timer(final Task task){
+        if(task.nextTimeAfter(new Date()) == null)return;
+        final Timer timer = new Timer();
+        TimerTask timerTask = new TimerTask() {
+            @Override
+            public void run() {
+                if(task.isRepeated()&& task.getEndTime().before(new Date())) {
+                    timer.cancel();
+                    task.setTimer(null);
+                }
+                JOptionPane.showMessageDialog(mainFrame,"Time to do "+task.getTitle() );
+                if (!task.isRepeated()){
+                    timer.cancel();
+                    task.setTimer(null);
+                }
+            }
+        };
+        if(task.isRepeated()){
+            timer.scheduleAtFixedRate(timerTask,task.nextTimeAfter(new Date()),task.getRepeatInterval()*1000);
+        }else {
+            timer.schedule(timerTask,task.nextTimeAfter(new Date()));
+        }
+        task.setTimer(timer);
+    }
+    public void tasksTimer(List<Task> tasks) {
+        for (Task task : tasks)
+            timer(task);
+    }
+
+    public void mainListListener(JList mainList){
+        mainList.addListSelectionListener(
                 new ListSelectionListener() {
                     public void valueChanged(ListSelectionEvent e) {
-                        int index = myFrame.getList().getAnchorSelectionIndex();
-                        taskIndex =  tasks.get(index);
-                        myFrame.getDp().setData(taskIndex);
+                        int index = mainFrame.getList().getAnchorSelectionIndex();
+                        taskIndex = tasks.get(index);
+                        mainFrame.getDp().setData(taskIndex);
                     }
                 });
+    }
 
-        Menu menu =  myFrame.getMenu();
-        menu.getExitItem().addActionListener(new ActionListener() {
+    public void removeListener(JMenuItem remove){
+        remove.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                System.exit(0);
-            }
-        });
-        menu.getRepeat().addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                final TaskRepeat m = new TaskRepeat();
-                m.getjButton().addActionListener(new ActionListener() {
-                    public void actionPerformed(ActionEvent e) {
-                        Task newTask =  m.getTask();
-                        timer(newTask);
-                        tasks.add(newTask);
-                        myFrame.getList().addTask(newTask);
-                        m.setVisible(false);
-                    }
-                    });
-            }
-        });
-        menu.getNrepeat().addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                final TaskNotRepeat m = new TaskNotRepeat();
-                m.getjButton().addActionListener(new ActionListener() {
-                    public void actionPerformed(ActionEvent e) {
-                        Task newTask =  m.getTask();
-                        timer(newTask);
-                        tasks.add(newTask);
-                        myFrame.getList().addTask(newTask);
-                        m.setVisible(false);
-                    }
-                });
-            }
-        });
-
-        menu.getChange().addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-               if ( taskIndex != null){
-                   final TaskChange change = new TaskChange(taskIndex);
-                   change.getjButton().addActionListener(new ActionListener() {
-                       public void actionPerformed(ActionEvent e) {
-                           change.setTask();
-                           if(taskIndex.isTimer()) {
-                               taskIndex.getTimer().cancel();
-                               timer(taskIndex);
-                           }else timer(taskIndex);
-                           myFrame.getList().addTasks(tasks);
-                           change.setVisible(false);
-                       }
-                   });
-               }
-            }
-        });
-        menu.getRemove().addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                if ( taskIndex != null){
-                    if(taskIndex.isTimer()) taskIndex.getTimer().cancel();
+                if (taskIndex != null) {
+                    if (taskIndex.isTimer()) taskIndex.getTimer().cancel();
                     tasks.remove(taskIndex);
-                    myFrame.getList().removeTask(taskIndex);
+                    mainFrame.getList().removeTask(taskIndex);
                 }
             }
         });
+    }
 
-        menu.getCalendar().addActionListener( new ActionListener() {
+    public void changeTaskListener(JMenuItem change){
+        change.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                if (taskIndex != null) {
+                    final TaskChange change = new TaskChange(taskIndex);
+                    change.getjButton().addActionListener(new ActionListener() {
+                        public void actionPerformed(ActionEvent e) {
+                            change.setTask();
+                            if (taskIndex.isTimer()) {
+                                taskIndex.getTimer().cancel();
+                                timer(taskIndex);
+                            } else timer(taskIndex);
+                            mainFrame.getList().addTasks(tasks);
+                            change.setVisible(false);
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    public void  calendarListener(JMenuItem calendar){
+        calendar.addActionListener( new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 final Calendar calendar = new Calendar();
                 calendar.getGoButton().addActionListener(new ActionListener() {
@@ -145,8 +162,11 @@ public class TaskController {
             }
 
         });
+    }
 
-        myFrame.addWindowListener(new WindowAdapter() {
+
+    public void exitSaveListener(JFrame frame){
+        frame.addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent event) {
                 Object[] options = { "Да", "Нет!" };
                 int n = JOptionPane
@@ -155,39 +175,55 @@ public class TaskController {
                                 JOptionPane.QUESTION_MESSAGE, null, options,
                                 options[0]);
                 if (n == 0) {
-                    TaskIO.writeText(tasks,file);
+                    taskIO.write(tasks,file);
                     event.getWindow().setVisible(false);
                     System.exit(1);
                 }
             }
         });
-    }
-    public void timer(final Task task){
-        if(task.nextTimeAfter(new Date()) == null)return;
-        final Timer timer = new Timer();
-        TimerTask timerTask = new TimerTask() {
-            @Override
-            public void run() {
-                if(task.isRepeated()&& task.getEndTime().before(new Date())) {
-                    timer.cancel();
-                    task.setTimer(null);
-                }
-                JOptionPane.showMessageDialog(myFrame,"Time to do "+task.getTitle() );
-                if (!task.isRepeated()){
-                    timer.cancel();
-                    task.setTimer(null);
-                }
+    };
+
+    public void exitNotSaveListener(JMenuItem exit){
+        exit.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                System.exit(0);
             }
-        };
-        if(task.isRepeated()){
-            timer.scheduleAtFixedRate(timerTask,task.nextTimeAfter(new Date()),task.getRepeatInterval()*1000);
-        }else {
-            timer.schedule(timerTask,task.nextTimeAfter(new Date()));
+        });
+    }
+
+    public void newTaskListener(JMenuItem newTaskItem, final boolean isRepeated){
+        newTaskItem.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                    final NewTask addTask;
+                    if(isRepeated)  addTask = new TaskRepeat();
+                    else  addTask = new TaskNotRepeat();
+                    addTask.getjButtonAdd().addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        Task newTask =  addTask.getTask();
+                        timer(newTask);
+                        tasks.add(newTask);
+                        mainFrame.getList().addTask(newTask);
+                        addTask.setVisible(false);
+                    }
+                });
+            }
+        });
+
+    }
+    /*public void newTaskListener(JTextField task, final JTextField block){
+        task.addKeyListener(new KeyListener() {
+            @Override
+            public void keyTyped(KeyEvent e) {
+            }
+            @Override
+            public void keyPressed(KeyEvent e) {
+            }
+             @Override
+             public void keyReleased(KeyEvent e) {
+
+             }
         }
-        task.setTimer(timer);
-    }
-    public void tasksTimer(List<Task> tasks) {
-        for (Task task : tasks)
-            timer(task);
-    }
+        );
+    } */
+
 }
